@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "787942532927",
+    "firebase_url": "https://snapshots-e24fe-default-rtdb.europe-west1.firebasedatabase.app",
+    "project_id": "snapshots-e24fe",
+    "storage_bucket": "snapshots-e24fe.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:787942532927:android:622516f3adf9a72e11d58a",
+        "android_client_info": {
+          "package_name": "com.example.snapshots"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "787942532927-mmhvnpa2k91ebbu33quj68l2cmd0tsm6.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDREKBO5YW3JjsCn-zx8hIa0CEsObTAPZQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "787942532927-mmhvnpa2k91ebbu33quj68l2cmd0tsm6.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
