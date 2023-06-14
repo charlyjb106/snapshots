@@ -1,5 +1,5 @@
 
-package com.example.snapshots
+package com.example.snapshots.ui.fragments
 
 import android.os.Bundle
 import androidx.fragment.app.Fragment
@@ -11,7 +11,10 @@ import com.example.snapshots.databinding.FragmentProfileBinding
 import com.firebase.ui.auth.AuthUI
 import com.google.firebase.auth.FirebaseAuth
 
-
+/**
+ * It is the class that manage the profileFragment. In this screen user see his own email and a
+ * button to logout.
+ */
 class ProfileFragment : Fragment() {
 
     private lateinit var mBinding: FragmentProfileBinding
@@ -19,7 +22,7 @@ class ProfileFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         mBinding = FragmentProfileBinding.inflate(inflater, container, false)
         return mBinding.root
 

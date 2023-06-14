@@ -1,13 +1,18 @@
-package com.example.snapshots
+package com.example.snapshots.ui
 
-import android.content.Intent
+
+
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.util.Log
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
+import com.example.snapshots.R
 import com.example.snapshots.databinding.ActivityMainBinding
+import com.example.snapshots.ui.fragments.AddFragment
+import com.example.snapshots.ui.fragments.HomeFragment
+import com.example.snapshots.ui.fragments.ProfileFragment
 import com.firebase.ui.auth.AuthUI
 import com.firebase.ui.auth.IdpResponse
 import com.google.firebase.auth.FirebaseAuth
@@ -15,7 +20,6 @@ import com.google.firebase.auth.FirebaseAuth
 
 class MainActivity : AppCompatActivity() {
 
-    private val RC_SIGN_IN = 21
 
     private lateinit var mBinding: ActivityMainBinding
 
@@ -24,6 +28,19 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var mAuthListener: FirebaseAuth.AuthStateListener
     private var mFirebaseAuth: FirebaseAuth? = null
+
+    private val authResult = registerForActivityResult(ActivityResultContracts.StartActivityForResult()){
+
+            if (it.resultCode == RESULT_OK) {
+                Toast.makeText(this, "Welcome..." , Toast.LENGTH_SHORT).show()
+            } else {
+                //user cancel firebase auth
+                if(IdpResponse.fromResultIntent(it.data) == null) {
+                    finish()
+                }
+            }
+
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,18 +60,20 @@ class MainActivity : AppCompatActivity() {
         mFirebaseAuth = FirebaseAuth.getInstance()
         mAuthListener = FirebaseAuth.AuthStateListener {
             val user = it.currentUser
-            Log.i("USER-----> " , user.toString())
 
+            //if user is null, goes to the login page
             if(user == null) {
-                startActivityForResult(AuthUI.getInstance().createSignInIntentBuilder()
-                    //.setIsSmartLockEnabled(false)   ask for using a logged account
-                    .setAvailableProviders(
-                        listOf(
-                            AuthUI.IdpConfig.EmailBuilder().build(),
-                        AuthUI.IdpConfig.GoogleBuilder().build())
-                    )
-                    .build(), RC_SIGN_IN
+                authResult.launch(
+                    AuthUI.getInstance().createSignInIntentBuilder()
+                        .setIsSmartLockEnabled(false)   //ask for using a logged account
+                        .setAvailableProviders(
+                            listOf(
+                                AuthUI.IdpConfig.EmailBuilder().build(),
+                                AuthUI.IdpConfig.GoogleBuilder().build())
+                        )
+                        .build()
                 )
+
             }
         }
 
@@ -127,22 +146,8 @@ class MainActivity : AppCompatActivity() {
         mFirebaseAuth?.removeAuthStateListener(mAuthListener)
     }
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if(requestCode == RC_SIGN_IN) {
-            if (resultCode == RESULT_OK) {
-                Toast.makeText(this, "Welcome..." , Toast.LENGTH_SHORT).show()
-            } else {
-                //user cancel firebase auth
-                if(IdpResponse.fromResultIntent(data) == null) {
-                    finish()
-                }
-            }
-        }
-    }
+
 }
-
-
 
 
 

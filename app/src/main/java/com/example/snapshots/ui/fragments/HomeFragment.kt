@@ -1,4 +1,4 @@
-package com.example.snapshots
+package com.example.snapshots.ui.fragments
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -12,26 +12,37 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
+import com.example.snapshots.utils.HomeAux
+import com.example.snapshots.R
 import com.example.snapshots.databinding.FragmentHomeBinding
 import com.example.snapshots.databinding.ItemSnapshotBinding
+import com.example.snapshots.entities.Snapshot
 import com.firebase.ui.database.FirebaseRecyclerAdapter
 import com.firebase.ui.database.FirebaseRecyclerOptions
-import com.firebase.ui.database.SnapshotParser
+import com.google.android.material.snackbar.Snackbar
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.storage.FirebaseStorage
 
+/**
+ * It is the class that manage the homeFragment, where the user see the posts
+ */
+@Suppress("NAME_SHADOWING")
+class HomeFragment : Fragment(), HomeAux {
 
-class HomeFragment : Fragment() {
+    private val PATH_SNAPSHOT = "snapshots"
 
     private lateinit var mBinding: FragmentHomeBinding
     private lateinit var mFirebaseAdapter: FirebaseRecyclerAdapter<Snapshot, SnapshotHolder>
 
     private lateinit var mLayoutManager: RecyclerView.LayoutManager
 
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         mBinding = FragmentHomeBinding.inflate(inflater, container, false)
         return mBinding.root
     }
@@ -46,11 +57,11 @@ class HomeFragment : Fragment() {
 
         //Customize the snapshot object, to set the id of the object equal to the key of this object
         //(this key is how firebase named the object in data base, the "branch's name" )
-        val options = FirebaseRecyclerOptions.Builder<Snapshot>().setQuery(query, SnapshotParser {
+        val options = FirebaseRecyclerOptions.Builder<Snapshot>().setQuery(query) {
             val snapshot = it.getValue(Snapshot::class.java)
             snapshot!!.id = it.key!!
             snapshot
-        }).build()
+        }.build()
 
         //This is default way to get all the properties
         //val options = FirebaseRecyclerOptions.Builder<Snapshot>()
@@ -80,11 +91,24 @@ class HomeFragment : Fragment() {
                     setListener(snapshot)
 
                     binding.tvTitle.text = snapshot.title
+                    binding.cbLike.text = snapshot.likeList.keys.size.toString() //likes number
+                    FirebaseAuth.getInstance().currentUser?.let {
+                        binding.cbLike.isChecked = snapshot.likeList
+                            .containsKey(it.uid)
+                    }
                     Glide.with(mContext)
                         .load(snapshot.photoUrl)
                         .diskCacheStrategy(DiskCacheStrategy.ALL)
                         .centerCrop()
                         .into(binding.ivPhoto)
+
+                    //check if the post's owner is the login user, if its not, hide the delete button
+                    binding.btnDelete.visibility =
+                        if(model.ownerUid == FirebaseAuth.getInstance().currentUser!!.uid){
+                            View.VISIBLE
+                        } else {
+                            View.INVISIBLE
+                        }
                 }
 
             }
@@ -125,6 +149,12 @@ class HomeFragment : Fragment() {
         mFirebaseAdapter.stopListening()
     }
 
+    /**
+     * When user clicks on the same fragment that he is in, it will go to the top of this fragment
+     */
+    override fun goToTop() {
+        mBinding.recyclerView.smoothScrollToPosition(0)
+    }
 
     /**
      * remove a post from the database
@@ -132,13 +162,47 @@ class HomeFragment : Fragment() {
      */
     private fun deleteSnapshot(snapshot: Snapshot){
 
+        //get the ref of the post in firebase storage
+        val storageSnapshotRef = FirebaseStorage.getInstance().reference
+            .child(PATH_SNAPSHOT)
+            .child(FirebaseAuth.getInstance().currentUser!!.uid)
+            .child(snapshot.id)
+
         val databaseReference = FirebaseDatabase.getInstance().reference.child("snapshots")
-        databaseReference.child(snapshot.id).removeValue()
+
+        //delete the image from firebase storage and then form db
+        storageSnapshotRef.delete().addOnCompleteListener {
+            if(it.isSuccessful) {
+                databaseReference.child(snapshot.id).removeValue()
+            } else {
+                Snackbar.make(mBinding.root, "Could not remove the photo", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+
 
     }
 
 
+    /**
+     * add or remove if a user likes or not likes a post
+     */
     private fun setLikes(snapshot: Snapshot, checked: Boolean) {
+
+        //post's reference
+        val databaseReference = FirebaseDatabase.getInstance().reference.child("snapshots")
+
+        //if user likes, then unlike else likes
+        if(checked) {
+            databaseReference.child(snapshot.id).child("likeList")
+                .child(FirebaseAuth.getInstance().currentUser!!.uid)
+                .setValue(true)
+
+        } else {
+            databaseReference.child(snapshot.id).child("likeList")
+                .child(FirebaseAuth.getInstance().currentUser!!.uid)
+                .setValue(null)
+        }
 
     }
 
@@ -154,6 +218,10 @@ class HomeFragment : Fragment() {
         fun setListener(snapshot: Snapshot){
 
             binding.btnDelete.setOnClickListener { deleteSnapshot(snapshot) }
+
+            binding.cbLike.setOnCheckedChangeListener { _, checked ->
+                setLikes(snapshot, checked)
+            }
         }
 
     }
